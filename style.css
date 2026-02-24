@@ -154,3 +154,29 @@ body {
 #barcodeReader { width: 100%; min-height: 220px; border-radius: 12px; overflow: hidden; background: #000; }
 #barcodeReader video { width: 100%; }
 .btn-close-scan { margin-top: 12px; padding: 10px 20px; border: none; background: #64748b; color: white; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+
+/* Register section */
+.register-section { display: none; position: fixed; inset: 0; z-index: 150; background: #f1f5f9; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
+.register-section.show { display: block; }
+.register-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.register-title { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+.btn-close-register { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; padding: 4px 8px; }
+.register-form { background: white; padding: 24px; border-radius: 20px; max-width: 420px; margin: 0 auto; box-shadow: 0 10px 20px rgba(0,0,0,0.06); }
+.reg-field { margin-bottom: 14px; }
+.reg-field.half { width: 48%; }
+.reg-field.third { width: 32%; }
+.reg-row { display: flex; flex-wrap: wrap; gap: 2%; margin-bottom: 14px; }
+.reg-label { display: block; font-weight: 600; font-size: 0.85rem; color: var(--primary); margin-bottom: 4px; }
+.reg-input, .reg-select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; box-sizing: border-box; }
+.reg-select { cursor: pointer; }
+.reg-error { color: #dc2626; font-size: 0.8rem; margin-top: 4px; min-height: 1em; }
+#regReader { width: 100%; display: none; margin-bottom: 8px; border-radius: 10px; overflow: hidden; border: 2px solid var(--primary); }
+#regReader.show { display: block; }
+.reg-loader { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(255,255,255,0.95); flex-direction: column; align-items: center; justify-content: center; }
+.reg-loader.show { display: flex; }
+.reg-loader p { margin-top: 12px; font-weight: 600; color: #555; }
+.reg-checkbox { margin: 12px 0; display: flex; align-items: center; gap: 8px; }
+.reg-checkbox input { width: auto; }
+.tnc-modal-content { max-width: 96%; text-align: left; }
+.tnc-box { height: 160px; overflow-y: auto; font-size: 11px; background: #f8f9fa; padding: 12px; border: 1px solid #e2e8f0; margin: 10px 0; text-align: justify; line-height: 1.4; border-radius: 10px; }
+#signature-pad { border: 2px dashed #ccc; background: #fff; width: 100%; height: 160px; cursor: crosshair; border-radius: 10px; margin-top: 8px; }

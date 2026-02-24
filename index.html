@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div id="bgLayer"></div>
@@ -51,6 +53,7 @@
     </div>
     <nav class="navbar">
         <div class="nav-item" onclick="showCard()"><span class="nav-icon">🪪</span><span>KAD</span></div>
+        <div class="nav-item" onclick="openRegister()"><span class="nav-icon">📝</span><span>DAFTAR</span></div>
         <div class="nav-item" onclick="openNews()"><span class="nav-icon">🔥</span><span>NEWS</span></div>
         <div class="nav-item" onclick="openSkinSelector()"><span class="nav-icon">🎨</span><span>SKIN</span></div>
         <a href="https://wa.me/60175626166" class="nav-item" target="_blank" rel="noopener"><span class="nav-icon">💬</span><span>HELP</span></a>
@@ -95,6 +98,80 @@
             <div class="confirm-actions">
                 <button type="button" class="btn-confirm-yes" id="confirmDeleteBtn" disabled onclick="doDelete()">Yes</button>
                 <button type="button" class="btn-confirm-no" onclick="closeDeleteConfirm()">No</button>
+            </div>
+        </div>
+    </div>
+    <!-- Register section (hidden by default) -->
+    <div id="registerArea" class="register-section">
+        <div class="register-header">
+            <span class="register-title">MBS Member Registration</span>
+            <button type="button" class="btn-close-register" onclick="closeRegister()">✕</button>
+        </div>
+        <div id="regLoader" class="reg-loader"><div class="spinner"></div><p>SEDANG MEMPROSES & MENJANA PDF...</p></div>
+        <form id="regForm" class="register-form">
+            <div class="reg-field">
+                <label class="reg-label">JENIS MEMBER</label>
+                <select class="reg-select" id="regType">
+                    <option value="PPS" selected>PPS (BLUE)</option>
+                    <option value="RED">RED</option>
+                    <option value="SKYBLUE">SKYBLUE</option>
+                    <option value="BLACK">BLACK</option>
+                </select>
+            </div>
+            <div class="reg-field">
+                <label class="reg-label">MEMBER CARD NO (imbas sahaja)</label>
+                <div id="regReader"></div>
+                <div class="input-row">
+                    <input type="text" class="reg-input" id="regCardNo" placeholder="Hanya imbas kod bar" readonly>
+                    <button type="button" class="btn-scan" onclick="startRegScan()">📷 SCAN</button>
+                </div>
+                <div id="regCardNoError" class="reg-error"></div>
+            </div>
+            <div class="reg-field"><label class="reg-label">NAMA PENUH</label><input type="text" class="reg-input" id="regNama" required></div>
+            <div class="reg-row">
+                <div class="reg-field half"><label class="reg-label">NOMBOR IC</label><input type="text" class="reg-input" id="regIc" placeholder="Cth 900101065544" required></div>
+                <div class="reg-field half"><label class="reg-label">HANDPHONE</label><input type="tel" class="reg-input" id="regPhone" placeholder="Cth 0123456789" required></div>
+            </div>
+            <div class="reg-field"><label class="reg-label">ALAMAT</label><textarea class="reg-input" id="regAlamat" rows="2" required></textarea></div>
+            <div class="reg-row">
+                <div class="reg-field third"><label class="reg-label">POSTCODE</label><input type="text" class="reg-input" id="regPostcode" required></div>
+                <div class="reg-field third"><label class="reg-label">CITY</label><input type="text" class="reg-input" id="regCity" required></div>
+                <div class="reg-field third"><label class="reg-label">STATE</label>
+                    <select class="reg-select" id="regState" required>
+                        <option value="" disabled selected>PILIH</option>
+                        <option>PAHANG</option><option>SELANGOR</option><option>KUALA LUMPUR</option>
+                        <option>JOHOR</option><option>KEDAH</option><option>KELANTAN</option>
+                        <option>MELAKA</option><option>NEGERI SEMBILAN</option><option>PERAK</option>
+                        <option>PERLIS</option><option>PULAU PINANG</option><option>SABAH</option>
+                        <option>SARAWAK</option><option>TERENGGANU</option>
+                    </select>
+                </div>
+            </div>
+            <div class="reg-field"><label class="reg-label">BIL ANAK MASIH BELAJAR</label><input type="number" class="reg-input" id="regAnak" value="0"></div>
+            <button type="button" class="btn-activate" onclick="openRegSignatureModal()">SETERUSNYA PENGESAHAN & TANDATANGAN</button>
+        </form>
+    </div>
+    <div id="tncModal" class="modal">
+        <div class="modal-content tnc-modal-content">
+            <span class="close" onclick="closeTnCModal()">✕</span>
+            <h3 style="margin-top:0;">TERMA, SYARAT & PENGESAHAN</h3>
+            <div class="tnc-box" id="tncText">
+                <strong>ENGLISH</strong><br>
+                I agree to participate & abide at MBS Books & Stationery Pahang Pride Discount Card Term & Conditions. I hereby confirm that all my personal information stated above is true and complete. I hereby irrevocably consent and authorized MBS Books & Stationery to process any of my information and to release the same to any related and/or associate company within the MBS Books & Stationery existing of future business partners of strategic alliances and/or any other 3rd party as MBS may in its absolute discretion deem necessary or expedient for the purpose of marketing and promotion of products and services. I hereby confirm that no future permission or consent from me is necessary or required in relation there to and this shall constitute the consent required under the Personal Data Protection Act 2010 and any other contractual consent for such disclosure of information.
+                <br><br>
+                <strong>BAHASA MELAYU</strong><br>
+                Saya bersetuju untuk menyertai & mematuhi Terma & Syarat Kad Diskaun MBS Books & Stationery Pahang Pride. Saya dengan ini mengesahkan bahawa semua maklumat peribadi saya yg dinyatakan diatas adalah benar & lengkap. Saya dengan ini secara tidak boleh membatalkan kebenaran & member kuasa kepada MBS Books & Stationery untuk memproses mana-mana maklumat saya dan untuk mengeluarkannya kepada mana-mana syarikat berkaitan dan/atau bersekutu dalam MBS Books & Stationery.
+            </div>
+            <div class="reg-checkbox">
+                <input type="checkbox" id="agreeTnC" onchange="toggleBtnHantar()">
+                <label for="agreeTnC">Saya setuju dengan terma dan syarat di atas</label>
+            </div>
+            <label class="reg-label">SILA TURUNKAN TANDATANGAN DI BAWAH</label>
+            <canvas id="signature-pad"></canvas>
+            <button type="button" class="btn-delete" style="margin-top:8px;" onclick="clearRegSignature()">Padam Semula</button>
+            <div class="confirm-actions" style="margin-top:16px;">
+                <button type="button" class="btn-confirm-no" onclick="closeTnCModal()">BATAL</button>
+                <button type="button" class="btn-confirm-yes" id="btnHantar" disabled onclick="hantarDanDownload()">SAHKAN & DAFTAR</button>
             </div>
         </div>
     </div>

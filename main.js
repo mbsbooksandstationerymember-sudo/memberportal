@@ -197,8 +197,171 @@
             document.getElementById('setupArea').classList.remove('show');
             document.getElementById('cardArea').classList.remove('show');
             setTimeout(function() { renderCard(id); }, 400);
+        },
+        onRegisterSuccess: function(cardNo) {
+            if (!cardNo) return;
+            localStorage.setItem('mbs_digital_id', cardNo);
+            closeRegister();
+            document.getElementById('tncModal').classList.remove('show');
+            document.getElementById('loadingScreen').classList.remove('hide');
+            document.getElementById('setupArea').classList.remove('show');
+            document.getElementById('cardArea').classList.remove('show');
+            setTimeout(function() { renderCard(cardNo); isRendered = true; }, 400);
         }
     };
+
+    var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWu_EnJEJeszS8tWOeACSzg9mlWGHOivWKA70-_7T449Kakqx78CX4jmi_Vf-_Zkwexec/exec';
+    var regSignaturePad = null;
+    var regHtml5QrCode = null;
+
+    function openRegister() {
+        document.getElementById('setupArea').classList.remove('show');
+        document.getElementById('cardArea').classList.remove('show');
+        document.getElementById('loadingScreen').classList.add('hide');
+        document.getElementById('registerArea').classList.add('show');
+    }
+    function closeRegister() {
+        document.getElementById('registerArea').classList.remove('show');
+        if (isRendered) {
+            document.getElementById('cardArea').classList.add('show');
+        } else {
+            document.getElementById('setupArea').classList.add('show');
+        }
+    }
+
+    function validateRegCardNo(value) {
+        var v = (value || '').trim();
+        if (!v) return { ok: false, msg: 'Sila imbas no kad.' };
+        if (/[a-zA-Z]/.test(v)) return { ok: false, msg: 'No kad tidak sah: mengandungi abjad. Hanya nombor dan ruang dibenarkan.' };
+        var normalized = v.replace(/\s/g, '');
+        var validPrefixes = ['10', '20', '30', '40', '50', '60', '70', '80', '90'];
+        var ok = validPrefixes.some(function(p) { return normalized.indexOf(p) === 0; });
+        if (!ok) return { ok: false, msg: 'No kad tidak sah. Mesti bermula dengan 10, 20, 30, 40, 50, 60, 70, 80 atau 90.' };
+        return { ok: true };
+    }
+    function showRegCardNoError(msg) {
+        var el = document.getElementById('regCardNoError');
+        if (el) { el.textContent = msg || ''; el.style.display = msg ? 'block' : 'none'; }
+    }
+    function startRegScan() {
+        showRegCardNoError('');
+        var readerEl = document.getElementById('regReader');
+        readerEl.style.display = 'block';
+        readerEl.classList.add('show');
+        readerEl.innerHTML = '';
+        if (regHtml5QrCode) regHtml5QrCode = null;
+        regHtml5QrCode = new Html5Qrcode('regReader');
+        regHtml5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 250, height: 120 } },
+            function(decodedText) {
+                var result = validateRegCardNo(decodedText);
+                if (result.ok) {
+                    document.getElementById('regCardNo').value = (decodedText || '').trim();
+                    showRegCardNoError('');
+                } else {
+                    document.getElementById('regCardNo').value = '';
+                    showRegCardNoError(result.msg);
+                    alert(result.msg);
+                }
+                regHtml5QrCode.stop().then(function() { readerEl.style.display = 'none'; readerEl.classList.remove('show'); regHtml5QrCode = null; }).catch(function() {});
+            }
+        ).catch(function(err) { alert('Kamera Error: ' + err); readerEl.style.display = 'none'; });
+    }
+    function openRegSignatureModal() {
+        var cardNo = (document.getElementById('regCardNo').value || '').trim();
+        var cardResult = validateRegCardNo(cardNo);
+        if (!cardResult.ok) { showRegCardNoError(cardResult.msg); alert(cardResult.msg); return; }
+        showRegCardNoError('');
+        var form = document.getElementById('regForm');
+        if (!form.checkValidity()) return form.reportValidity();
+        document.getElementById('agreeTnC').checked = false;
+        document.getElementById('btnHantar').disabled = true;
+        var canvas = document.getElementById('signature-pad');
+        if (!regSignaturePad) {
+            regSignaturePad = new SignaturePad(canvas);
+            var ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+        } else regSignaturePad.clear();
+        document.getElementById('tncModal').classList.add('show');
+    }
+    function closeTnCModal() {
+        document.getElementById('tncModal').classList.remove('show');
+    }
+    function clearRegSignature() {
+        if (regSignaturePad) regSignaturePad.clear();
+    }
+    function toggleBtnHantar() {
+        var btn = document.getElementById('btnHantar');
+        if (btn) btn.disabled = !document.getElementById('agreeTnC').checked;
+    }
+    async function hantarDanDownload() {
+        if (!document.getElementById('agreeTnC').checked) return alert('Sila tandakan "Saya setuju dengan terma dan syarat di atas".');
+        if (!regSignaturePad || regSignaturePad.isEmpty()) return alert('Sila turunkan tandatangan!');
+        var cardNoVal = (document.getElementById('regCardNo').value || '').trim();
+        var cardResult = validateRegCardNo(cardNoVal);
+        if (!cardResult.ok) return alert(cardResult.msg);
+        document.getElementById('regLoader').classList.add('show');
+        var data = {
+            type: document.getElementById('regType').value,
+            cardNo: cardNoVal,
+            nama: (document.getElementById('regNama').value || '').toUpperCase().trim(),
+            ic: (document.getElementById('regIc').value || '').trim(),
+            phone: (document.getElementById('regPhone').value || '').trim(),
+            alamat: (document.getElementById('regAlamat').value || '').toUpperCase().trim(),
+            postcode: (document.getElementById('regPostcode').value || '').trim(),
+            city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
+            state: document.getElementById('regState').value,
+            anak: (document.getElementById('regAnak').value || '0'),
+            signature: regSignaturePad.toDataURL()
+        };
+        try {
+            var JsPDF = window.jspdf && window.jspdf.jsPDF;
+            if (JsPDF) {
+                var doc = new JsPDF();
+                doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+                doc.text('MBS BOOKS & STATIONERY', 105, 20, { align: 'center' });
+                doc.setFontSize(12); doc.text('PAHANG PRIDE DISCOUNT CARD - REGISTRATION RECEIPT', 105, 28, { align: 'center' });
+                doc.line(20, 32, 190, 32);
+                doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+                var y = 45;
+                var info = [['JENIS MEMBER', data.type], ['NO KAD', data.cardNo], ['NAMA PENUH', data.nama], ['NO IC', data.ic], ['HANDPHONE', data.phone], ['ALAMAT', data.alamat], ['POSTCODE', data.postcode], ['CITY', data.city], ['STATE', data.state], ['BIL ANAK', data.anak]];
+                info.forEach(function(item) {
+                    doc.setFont('helvetica', 'bold'); doc.text(item[0] + ':', 25, y);
+                    doc.setFont('helvetica', 'normal'); doc.text(String(item[1]), 75, y);
+                    y += 9;
+                });
+                y += 8;
+                doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+                doc.text('PENGAKUAN & SYARAT / CONFIRMATION & PDPA CONSENT', 25, y);
+                y += 5; doc.setFont('helvetica', 'normal');
+                var tncMsg = 'I hereby confirm that all my personal information stated above is true and complete. I authorize MBS Books & Stationery to process my information under the Personal Data Protection Act 2010 for marketing and services purposes.';
+                doc.text(doc.splitTextToSize(tncMsg, 160), 25, y);
+                y += 14; doc.text('Saya setuju / I agree with the terms and conditions above.', 25, y);
+                y += 8; doc.setFont('helvetica', 'bold'); doc.text('TANDATANGAN / SIGNATURE', 25, y);
+                doc.addImage(data.signature, 'PNG', 25, y + 2, 50, 25);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+                doc.text('Tarikh: ' + new Date().toLocaleDateString('ms-MY'), 25, y + 32);
+                doc.save('MBS_REG_' + data.cardNo + '.pdf');
+            }
+            await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+            document.getElementById('regLoader').classList.remove('show');
+            closeTnCModal();
+            alert('PENDAFTARAN BERJAYA! No kad telah disimpan ke kad digital anda.');
+            if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
+                window.MBSApp.onRegisterSuccess(cardNoVal);
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('regLoader').classList.remove('show');
+            alert('Berjaya menghantar. Jika PDF tidak dimuat turun, sila hubungi petugas. No kad telah disimpan.');
+            if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
+                window.MBSApp.onRegisterSuccess(cardNoVal);
+            }
+        }
+    }
 
     window.onload = function() {
         var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -246,4 +409,12 @@
     window.openDeleteConfirm = openDeleteConfirm;
     window.closeDeleteConfirm = closeDeleteConfirm;
     window.doDelete = doDelete;
+    window.openRegister = openRegister;
+    window.closeRegister = closeRegister;
+    window.openRegSignatureModal = openRegSignatureModal;
+    window.closeTnCModal = closeTnCModal;
+    window.clearRegSignature = clearRegSignature;
+    window.startRegScan = startRegScan;
+    window.toggleBtnHantar = toggleBtnHantar;
+    window.hantarDanDownload = hantarDanDownload;
 })();
