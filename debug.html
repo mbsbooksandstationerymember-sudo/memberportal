@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - MBS Member</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 24px; max-width: 400px; margin: 0 auto; }
+        h1 { font-size: 1.25rem; color: #0f172a; }
+        .card { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-top: 16px; }
+        button { background: #b91c1c; color: #fff; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
+        button:active { opacity: 0.9; }
+        p { color: #64748b; font-size: 0.9rem; margin: 8px 0 0 0; }
+        .id { color: #0f172a; font-weight: 600; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>Debug – MBS Member</h1>
+    <div class="card">
+        <p><strong>No. Ahli (localStorage):</strong><br><span id="currentId" class="id">—</span></p>
+        <button type="button" onclick="clearCard()">Clear localStorage (Padam No. Kad)</button>
+        <p id="msg"></p>
+    </div>
+    <script>
+        function showId() {
+            var id = localStorage.getItem('mbs_digital_id');
+            document.getElementById('currentId').textContent = id || '(kosong)';
+        }
+        function clearCard() {
+            localStorage.removeItem('mbs_digital_id');
+            document.getElementById('currentId').textContent = '(kosong)';
+            document.getElementById('msg').textContent = 'No. kad telah dipadam.';
+            setTimeout(function() { document.getElementById('msg').textContent = ''; }, 2000);
+        }
+        showId();
+    </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Content-Language" content="ms">
+    <title>Digital MBS Member Card</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/logo-192.png">
+    <link rel="icon" type="image/png" href="assets/logo-192.png">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <div id="bgLayer"></div>
+    <div id="updateBanner" class="update-banner" style="display:none;">
+        <span id="updateBannerText">Versi baru tersedia.</span>
+        <button type="button" id="updateBtn" class="update-btn">Update</button>
+    </div>
+    <div id="installBanner">
+        <p id="installText">Pasang aplikasi untuk guna offline</p>
+        <button id="installBtn">Pasang Aplikasi</button>
+    </div>
+    <div id="loadingScreen">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; font-size:0.9rem; color:#555;">Sila tunggu sebentar...</p>
+    </div>
+    <div id="setupArea" class="setup-area">
+        <h2 style="color:var(--primary); margin-top:0;">Digital MBS Member Card</h2>
+        <p style="font-size:0.8rem; color:#666; margin-bottom:20px;">Masukkan No. Ahli atau imbas kod bar.</p>
+        <div class="input-row">
+            <input type="text" id="memberInput" placeholder="Contoh: 3ABC99" autocomplete="off">
+            <button type="button" class="btn-scan" title="Imbas kod bar" onclick="openScanModal()">📷</button>
+        </div>
+        <button class="btn-activate" onclick="activateCard()">AKTIFKAN KAD</button>
+    </div>
+    <div id="cardArea">
+        <div id="visualBg" class="card-visual">
+            <div id="idDisplay" style="font-size:1.8rem; font-weight:800; margin-top:15px; letter-spacing:2px;"></div>
+        </div>
+        <div class="barcode-section">
+            <svg id="barcode"></svg>
+            <p style="font-size:0.6rem; color:#999; margin-top:5px; letter-spacing:1px;">SILA IMBAS DI KAUNTER</p>
+        </div>
+        <button type="button" class="btn-delete" onclick="openDeleteConfirm()">Hapus Kad dari Peranti</button>
+    </div>
+    <nav class="navbar">
+        <div class="nav-item" onclick="showCard()"><span class="nav-icon">🪪</span><span>KAD</span></div>
+        <div class="nav-item" onclick="openNews()"><span class="nav-icon">🔥</span><span>NEWS</span></div>
+        <div class="nav-item" onclick="openSkinSelector()"><span class="nav-icon">🎨</span><span>SKIN</span></div>
+        <a href="https://wa.me/60175626166" class="nav-item" target="_blank" rel="noopener"><span class="nav-icon">💬</span><span>HELP</span></a>
+    </nav>
+    <div id="skinModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSkinSelector()">✕</span>
+            <h3 style="margin-top:0;">Pilih Background</h3>
+            <div class="skin-grid">
+                <img src="assets/skin1.webp" alt="Skin 1" onclick="setBg(1)">
+                <img src="assets/skin2.webp" alt="Skin 2" onclick="setBg(2)">
+                <img src="assets/skin3.webp" alt="Skin 3" onclick="setBg(3)">
+            </div>
+        </div>
+    </div>
+    <div id="newsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeNews()">✕</span>
+            <h3 style="margin-top:0; color:var(--primary);">Promosi Terkini!</h3>
+            <a href="https://sites.google.com/view/mbs-promo" target="_blank" rel="noopener" class="btn-link">🌐 Katalog</a>
+            <a href="https://shopee.com.my/mbsworld" target="_blank" rel="noopener" class="btn-link" style="background:#ee4d2d;">🧡 Shopee</a>
+            <a href="https://www.facebook.com/MBSBooksNStationery/" target="_blank" rel="noopener" class="btn-link" style="background:#1877F2;">📘 Facebook</a>
+            <a href="https://www.tiktok.com/@mbsbookstorenstationery" target="_blank" rel="noopener" class="btn-link" style="background:#000;">🎵 TikTok</a>
+            <button onclick="closeNews()" style="border:none; background:none; color:#888; margin-top:10px; cursor:pointer;">Tutup</button>
+        </div>
+    </div>
+    <div id="scanModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeScanModal()">✕</span>
+            <h3 style="margin-top:0;">Imbas Kod Bar</h3>
+            <p style="font-size:0.85rem; color:#666; margin-bottom:12px;">Arahkan kamera belakang ke kod bar kad.</p>
+            <div id="barcodeReader"></div>
+            <button type="button" class="btn-close-scan" onclick="closeScanModal()">Tutup</button>
+        </div>
+    </div>
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDeleteConfirm()">✕</span>
+            <h3 style="margin-top:0; color:var(--primary);">Padam Kad</h3>
+            <p style="font-size:0.9rem; color:#64748b; margin-bottom:0;">Padam kad dari peranti? Taip <strong>DELETE</strong> untuk sahkan.</p>
+            <input type="text" id="deleteConfirmInput" placeholder="Taip DELETE" autocomplete="off">
+            <div class="confirm-actions">
+                <button type="button" class="btn-confirm-yes" id="confirmDeleteBtn" disabled onclick="doDelete()">Yes</button>
+                <button type="button" class="btn-confirm-no" onclick="closeDeleteConfirm()">No</button>
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+    <script src="camera.js"></script>
+</body>
+</html>
