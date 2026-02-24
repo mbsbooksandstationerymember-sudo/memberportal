@@ -201,12 +201,10 @@
         onRegisterSuccess: function(cardNo) {
             if (!cardNo) return;
             localStorage.setItem('mbs_digital_id', cardNo);
+            isRendered = true;
             closeRegister();
             document.getElementById('tncModal').classList.remove('show');
-            document.getElementById('loadingScreen').classList.remove('hide');
-            document.getElementById('setupArea').classList.remove('show');
-            document.getElementById('cardArea').classList.remove('show');
-            setTimeout(function() { renderCard(cardNo); isRendered = true; }, 400);
+            renderCard(cardNo);
         }
     };
 
@@ -246,7 +244,6 @@
     function startRegScan() {
         showRegCardNoError('');
         var readerEl = document.getElementById('regReader');
-        readerEl.style.display = 'block';
         readerEl.classList.add('show');
         readerEl.innerHTML = '';
         if (regHtml5QrCode) regHtml5QrCode = null;
@@ -264,9 +261,9 @@
                     showRegCardNoError(result.msg);
                     alert(result.msg);
                 }
-                regHtml5QrCode.stop().then(function() { readerEl.style.display = 'none'; readerEl.classList.remove('show'); regHtml5QrCode = null; }).catch(function() {});
+                regHtml5QrCode.stop().then(function() { readerEl.classList.remove('show'); regHtml5QrCode = null; }).catch(function() {});
             }
-        ).catch(function(err) { alert('Kamera Error: ' + err); readerEl.style.display = 'none'; });
+        ).catch(function(err) { alert('Kamera Error: ' + err); readerEl.classList.remove('show'); });
     }
     function openRegSignatureModal() {
         var cardNo = (document.getElementById('regCardNo').value || '').trim();
@@ -317,6 +314,14 @@
             anak: (document.getElementById('regAnak').value || '0'),
             signature: regSignaturePad.toDataURL()
         };
+        function finishRegister(successMsg) {
+            document.getElementById('regLoader').classList.remove('show');
+            closeTnCModal();
+            alert(successMsg);
+            if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
+                window.MBSApp.onRegisterSuccess(cardNoVal);
+            }
+        }
         try {
             var JsPDF = window.jspdf && window.jspdf.jsPDF;
             if (JsPDF) {
@@ -347,19 +352,10 @@
                 doc.save('MBS_REG_' + data.cardNo + '.pdf');
             }
             await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-            document.getElementById('regLoader').classList.remove('show');
-            closeTnCModal();
-            alert('PENDAFTARAN BERJAYA! No kad telah disimpan ke kad digital anda.');
-            if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
-                window.MBSApp.onRegisterSuccess(cardNoVal);
-            }
+            finishRegister('PENDAFTARAN BERJAYA! No kad telah disimpan ke kad digital anda.');
         } catch (err) {
             console.error(err);
-            document.getElementById('regLoader').classList.remove('show');
-            alert('Berjaya menghantar. Jika PDF tidak dimuat turun, sila hubungi petugas. No kad telah disimpan.');
-            if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
-                window.MBSApp.onRegisterSuccess(cardNoVal);
-            }
+            finishRegister('Berjaya menghantar. Jika PDF tidak dimuat turun, sila hubungi petugas. No kad telah disimpan.');
         }
     }
 
