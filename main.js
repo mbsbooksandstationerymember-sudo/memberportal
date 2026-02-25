@@ -4,6 +4,7 @@
     var isRendered = false;
     var checkInterval;
     var deferredPrompt;
+    var lastRegPdfUrl = null;
 
     function baseUrl() {
         var a = document.createElement('a');
@@ -338,7 +339,7 @@ async function hantarDanDownload() {
         city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
         state: document.getElementById('regState').value,
         anak: (document.getElementById('regAnak').value || '0'),
-        signature: regSignaturePad.toDataURL("image/jpeg", 0.7),
+        signature: regSignaturePad.toDataURL("image/png"),
         tncEn: (window.MBS_TNC_V1 && window.MBS_TNC_V1.textEn) ? window.MBS_TNC_V1.textEn : '',
         tncMy: (window.MBS_TNC_V1 && window.MBS_TNC_V1.textMy) ? window.MBS_TNC_V1.textMy : '',
         tncVersion: (window.MBS_TNC_V1 && window.MBS_TNC_V1.version) ? window.MBS_TNC_V1.version : ''
@@ -384,12 +385,13 @@ async function hantarDanDownload() {
             throw new Error(result.message || "Server error");
         }
 
-        // ===== PDF 由后端生成，这里只负责触发下载/打开 =====
+        // ===== PDF 由后端生成，这里只负责提供下载按钮 =====
         if (result && result.result === "success") {
             var downloadUrl = result.viewUrl || result.downloadUrl;
             if (downloadUrl) {
-                // 直接打开 Drive 预览链接，更稳定；用户可在预览里下载
-                window.open(downloadUrl, '_blank');
+                lastRegPdfUrl = downloadUrl;
+                var pdfBtn = document.getElementById('downloadPdfBtn');
+                if (pdfBtn) pdfBtn.style.display = 'block';
             }
         }
 
@@ -447,6 +449,13 @@ async function hantarDanDownload() {
     window.openDeleteConfirm = openDeleteConfirm;
     window.closeDeleteConfirm = closeDeleteConfirm;
     window.doDelete = doDelete;
+    window.downloadLastPdf = function() {
+        if (!lastRegPdfUrl) {
+            alert('Tiada PDF pendaftaran untuk dimuat turun.');
+            return;
+        }
+        window.open(lastRegPdfUrl, '_blank');
+    };
     window.openRegister = openRegister;
     window.closeRegister = closeRegister;
     window.openRegSignatureModal = openRegSignatureModal;

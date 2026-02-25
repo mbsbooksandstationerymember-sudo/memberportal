@@ -221,12 +221,19 @@ body {
 .register-form .btn-activate:active { transform: scale(0.98); }
 .reg-loader {
     display: none; position: fixed; inset: 0; z-index: 9999;
-    background: rgba(248,250,252,0.97); flex-direction: column;
-    align-items: center; justify-content: center;
+    background: rgba(15,23,42,0.85); flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
 }
 .reg-loader.show { display: flex; }
-.reg-loader .spinner { border-top-color: var(--primary); }
-.reg-loader p { margin-top: 14px; font-weight: 600; color: var(--primary); font-size: 0.9rem; }
+.reg-loader .spinner {
+    width: 72px; height: 72px;
+    border-width: 6px;
+    border-top-color: #e5e7eb;
+}
+.reg-loader p {
+    margin-top: 16px; font-weight: 700;
+    color: #e5e7eb; font-size: 1rem; letter-spacing: 0.03em;
+}
 .reg-checkbox { margin: 14px 0; display: flex; align-items: center; gap: 10px; }
 .reg-checkbox input { width: auto; accent-color: var(--primary); }
 .tnc-modal-content { max-width: 96%; text-align: left; }
