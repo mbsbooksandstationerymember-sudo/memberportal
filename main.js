@@ -321,8 +321,6 @@ async function hantarDanDownload() {
         city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
         state: document.getElementById('regState').value,
         anak: (document.getElementById('regAnak').value || '0'),
-
-        // 压缩签名
         signature: regSignaturePad.toDataURL("image/jpeg", 0.7)
     };
 
@@ -340,13 +338,16 @@ async function hantarDanDownload() {
 
     try {
 
-        // ===== 发送到 Apps Script =====
+        // ===== 发送到 Apps Script（稳定版）=====
+        const formData = new FormData();
+
+        for (const key in data) {
+            formData.append(key, data[key]);
+        }
+
         const res = await fetch(APPS_SCRIPT_URL, {
             method: "POST",
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify(data)
+            body: formData
         });
 
         let result = {};
@@ -508,6 +509,7 @@ async function hantarDanDownload() {
     window.toggleBtnHantar = toggleBtnHantar;
     window.hantarDanDownload = hantarDanDownload;
 })();
+
 
 
 
