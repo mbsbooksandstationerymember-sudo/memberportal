@@ -275,6 +275,7 @@
         document.getElementById('agreeTnC').checked = false;
         document.getElementById('btnHantar').disabled = true;
         var canvas = document.getElementById('signature-pad');
+        canvas.style.touchAction = "none";
         if (!regSignaturePad) {
             regSignaturePad = new SignaturePad(canvas);
             var ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -294,71 +295,149 @@
         var btn = document.getElementById('btnHantar');
         if (btn) btn.disabled = !document.getElementById('agreeTnC').checked;
     }
-    async function hantarDanDownload() {
-        if (!document.getElementById('agreeTnC').checked) return alert('Sila tandakan "Saya setuju dengan terma dan syarat di atas".');
-        if (!regSignaturePad || regSignaturePad.isEmpty()) return alert('Sila turunkan tandatangan!');
-        var cardNoVal = (document.getElementById('regCardNo').value || '').trim();
-        var cardResult = validateRegCardNo(cardNoVal);
-        if (!cardResult.ok) return alert(cardResult.msg);
-        document.getElementById('regLoader').classList.add('show');
-        var data = {
-            type: document.getElementById('regType').value,
-            cardNo: cardNoVal,
-            nama: (document.getElementById('regNama').value || '').toUpperCase().trim(),
-            ic: (document.getElementById('regIc').value || '').trim(),
-            phone: (document.getElementById('regPhone').value || '').trim(),
-            alamat: (document.getElementById('regAlamat').value || '').toUpperCase().trim(),
-            postcode: (document.getElementById('regPostcode').value || '').trim(),
-            city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
-            state: document.getElementById('regState').value,
-            anak: (document.getElementById('regAnak').value || '0'),
-            signature: regSignaturePad.toDataURL()
-        };
-        function finishRegister(successMsg) {
-            document.getElementById('regLoader').classList.remove('show');
-            closeTnCModal();
-            alert(successMsg);
-            if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
-                window.MBSApp.onRegisterSuccess(cardNoVal);
-            }
-        }
-        try {
-            var JsPDF = window.jspdf && window.jspdf.jsPDF;
-            if (JsPDF) {
-                var doc = new JsPDF();
-                doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-                doc.text('MBS BOOKS & STATIONERY', 105, 20, { align: 'center' });
-                doc.setFontSize(12); doc.text('PAHANG PRIDE DISCOUNT CARD - REGISTRATION RECEIPT', 105, 28, { align: 'center' });
-                doc.line(20, 32, 190, 32);
-                doc.setFontSize(11); doc.setFont('helvetica', 'normal');
-                var y = 45;
-                var info = [['JENIS MEMBER', data.type], ['NO KAD', data.cardNo], ['NAMA PENUH', data.nama], ['NO IC', data.ic], ['HANDPHONE', data.phone], ['ALAMAT', data.alamat], ['POSTCODE', data.postcode], ['CITY', data.city], ['STATE', data.state], ['BIL ANAK', data.anak]];
-                info.forEach(function(item) {
-                    doc.setFont('helvetica', 'bold'); doc.text(item[0] + ':', 25, y);
-                    doc.setFont('helvetica', 'normal'); doc.text(String(item[1]), 75, y);
-                    y += 9;
-                });
-                y += 8;
-                doc.setFontSize(9); doc.setFont('helvetica', 'bold');
-                doc.text('PENGAKUAN & SYARAT / CONFIRMATION & PDPA CONSENT', 25, y);
-                y += 5; doc.setFont('helvetica', 'normal');
-                var tncMsg = 'I hereby confirm that all my personal information stated above is true and complete. I authorize MBS Books & Stationery to process my information under the Personal Data Protection Act 2010 for marketing and services purposes.';
-                doc.text(doc.splitTextToSize(tncMsg, 160), 25, y);
-                y += 14; doc.text('Saya setuju / I agree with the terms and conditions above.', 25, y);
-                y += 8; doc.setFont('helvetica', 'bold'); doc.text('TANDATANGAN / SIGNATURE', 25, y);
-                doc.addImage(data.signature, 'PNG', 25, y + 2, 50, 25);
-                doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-                doc.text('Tarikh: ' + new Date().toLocaleDateString('ms-MY'), 25, y + 32);
-                doc.save('MBS_REG_' + data.cardNo + '.pdf');
-            }
-            await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-            finishRegister('PENDAFTARAN BERJAYA! No kad telah disimpan ke kad digital anda.');
-        } catch (err) {
-            console.error(err);
-            finishRegister('Berjaya menghantar. Jika PDF tidak dimuat turun, sila hubungi petugas. No kad telah disimpan.');
+async function hantarDanDownload() {
+
+    if (!document.getElementById('agreeTnC').checked)
+        return alert('Sila tandakan "Saya setuju dengan terma dan syarat di atas".');
+
+    if (!regSignaturePad || regSignaturePad.isEmpty())
+        return alert('Sila turunkan tandatangan!');
+
+    var cardNoVal = (document.getElementById('regCardNo').value || '').trim();
+    var cardResult = validateRegCardNo(cardNoVal);
+
+    if (!cardResult.ok) return alert(cardResult.msg);
+
+    document.getElementById('regLoader').classList.add('show');
+
+    var data = {
+        type: document.getElementById('regType').value,
+        cardNo: cardNoVal,
+        nama: (document.getElementById('regNama').value || '').toUpperCase().trim(),
+        ic: (document.getElementById('regIc').value || '').trim(),
+        phone: (document.getElementById('regPhone').value || '').trim(),
+        alamat: (document.getElementById('regAlamat').value || '').toUpperCase().trim(),
+        postcode: (document.getElementById('regPostcode').value || '').trim(),
+        city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
+        state: document.getElementById('regState').value,
+        anak: (document.getElementById('regAnak').value || '0'),
+        signature: regSignaturePad.toDataURL("image/png",0.8)
+    };
+
+    function finishRegister(msg) {
+        document.getElementById('regLoader').classList.remove('show');
+        closeTnCModal();
+        alert(msg);
+
+        if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
+            window.MBSApp.onRegisterSuccess(cardNoVal);
         }
     }
 
+    try {
+
+        // SEND TO APPS SCRIPT
+        const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        console.log("Server:", result);
+
+        if (result.result !== "success") {
+            throw new Error(result.message || "Server error");
+        }
+
+        // GENERATE PDF
+        var JsPDF = window.jspdf && window.jspdf.jsPDF;
+
+        if (JsPDF) {
+
+            var doc = new JsPDF();
+
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text('MBS BOOKS & STATIONERY', 105, 20, { align: 'center' });
+
+            doc.setFontSize(12);
+            doc.text('PAHANG PRIDE DISCOUNT CARD - REGISTRATION RECEIPT', 105, 28, { align: 'center' });
+
+            doc.line(20, 32, 190, 32);
+
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+
+            var y = 45;
+
+            var info = [
+                ['JENIS MEMBER', data.type],
+                ['NO KAD', data.cardNo],
+                ['NAMA PENUH', data.nama],
+                ['NO IC', data.ic],
+                ['HANDPHONE', data.phone],
+                ['ALAMAT', data.alamat],
+                ['POSTCODE', data.postcode],
+                ['CITY', data.city],
+                ['STATE', data.state],
+                ['BIL ANAK', data.anak]
+            ];
+
+            info.forEach(function(item) {
+                doc.setFont('helvetica', 'bold');
+                doc.text(item[0] + ':', 25, y);
+
+                doc.setFont('helvetica', 'normal');
+                doc.text(String(item[1]), 75, y);
+
+                y += 9;
+            });
+
+            y += 8;
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PENGAKUAN & SYARAT', 25, y);
+
+            y += 5;
+
+            doc.setFont('helvetica', 'normal');
+
+            var tncMsg =
+            'I hereby confirm that all my personal information stated above is true and complete.';
+
+            doc.text(doc.splitTextToSize(tncMsg, 160), 25, y);
+
+            y += 14;
+
+            doc.text('Saya setuju / I agree.', 25, y);
+
+            y += 8;
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('TANDATANGAN', 25, y);
+
+            doc.addImage(data.signature, 'PNG', 25, y + 2, 50, 25);
+
+            doc.setFontSize(8);
+            doc.text('Tarikh: ' + new Date().toLocaleDateString('ms-MY'), 25, y + 32);
+
+            doc.save('MBS_REG_' + data.cardNo + '.pdf');
+        }
+
+        finishRegister('PENDAFTARAN BERJAYA!');
+
+    } catch (err) {
+
+        console.error(err);
+        finishRegister('Ralat sambungan server. Sila cuba lagi.');
+
+    }
+}
+    
     window.onload = function() {
         var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -414,4 +493,5 @@
     window.toggleBtnHantar = toggleBtnHantar;
     window.hantarDanDownload = hantarDanDownload;
 })();
+
 
