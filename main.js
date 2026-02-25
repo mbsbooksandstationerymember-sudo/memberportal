@@ -279,16 +279,26 @@
         if (!form.checkValidity()) return form.reportValidity();
         document.getElementById('agreeTnC').checked = false;
         document.getElementById('btnHantar').disabled = true;
-        var canvas = document.getElementById('signature-pad');
-        canvas.style.touchAction = "none";
-        if (!regSignaturePad) {
-            regSignaturePad = new SignaturePad(canvas);
+        var modal = document.getElementById('tncModal');
+        if (modal) modal.classList.add('show');
+        // 等 modal 显示后再初始化/重置签名板，避免 canvas 尺寸为 0
+        setTimeout(function() {
+            var canvas = document.getElementById('signature-pad');
+            if (!canvas) return;
+            canvas.style.touchAction = "none";
             var ratio = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
-            canvas.getContext('2d').scale(ratio, ratio);
-        } else regSignaturePad.clear();
-        document.getElementById('tncModal').classList.add('show');
+            var displayWidth = canvas.offsetWidth || 300;
+            var displayHeight = canvas.offsetHeight || 160;
+            canvas.width = displayWidth * ratio;
+            canvas.height = displayHeight * ratio;
+            var ctx = canvas.getContext('2d');
+            if (ctx) ctx.scale(ratio, ratio);
+            if (!regSignaturePad) {
+                regSignaturePad = new SignaturePad(canvas);
+            } else {
+                regSignaturePad.clear();
+            }
+        }, 0);
     }
     function closeTnCModal() {
         document.getElementById('tncModal').classList.remove('show');
@@ -314,6 +324,8 @@ async function hantarDanDownload() {
     if (!cardResult.ok) return alert(cardResult.msg);
 
     document.getElementById('regLoader').classList.add('show');
+    var submitBtn = document.getElementById('btnHantar');
+    if (submitBtn) submitBtn.disabled = true;
 
     var data = {
         type: document.getElementById('regType').value,
@@ -334,7 +346,10 @@ async function hantarDanDownload() {
 
     function finishRegister(msg, isSuccess) {
         document.getElementById('regLoader').classList.remove('show');
-        closeTnCModal();
+        var submitBtn = document.getElementById('btnHantar');
+        // 成功后保持禁用（modal 会关闭），失败时允许用户重新尝试
+        if (submitBtn && !isSuccess) submitBtn.disabled = false;
+        if (isSuccess) closeTnCModal();
         alert(msg);
         if (isSuccess && window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
             window.MBSApp.onRegisterSuccess(cardNoVal);
@@ -369,21 +384,12 @@ async function hantarDanDownload() {
             throw new Error(result.message || "Server error");
         }
 
-        // ===== PDF 由后端生成，这里只负责触发下载 =====
+        // ===== PDF 由后端生成，这里只负责触发下载/打开 =====
         if (result && result.result === "success") {
-            var downloadUrl = result.downloadUrl || result.viewUrl;
+            var downloadUrl = result.viewUrl || result.downloadUrl;
             if (downloadUrl) {
-                try {
-                    var a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = 'MBS_REG_' + data.cardNo + '.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                } catch (e) {
-                    // 回退：无法使用 download 属性时，直接新开窗口
-                    window.open(downloadUrl, '_blank');
-                }
+                // 直接打开 Drive 预览链接，更稳定；用户可在预览里下载
+                window.open(downloadUrl, '_blank');
             }
         }
 
