@@ -324,6 +324,9 @@ async function hantarDanDownload() {
 
     if (!cardResult.ok) return alert(cardResult.msg);
 
+    // 通过所有校验后，先关闭 HANTAR/TNC 弹窗，再进入全屏 Loading
+    var tncModal = document.getElementById('tncModal');
+    if (tncModal) tncModal.classList.remove('show');
     document.getElementById('regLoader').classList.add('show');
     var submitBtn = document.getElementById('btnHantar');
     if (submitBtn) submitBtn.disabled = true;
@@ -348,9 +351,15 @@ async function hantarDanDownload() {
     function finishRegister(msg, isSuccess) {
         document.getElementById('regLoader').classList.remove('show');
         var submitBtn = document.getElementById('btnHantar');
-        // 成功后保持禁用（modal 会关闭），失败时允许用户重新尝试
-        if (submitBtn && !isSuccess) submitBtn.disabled = false;
-        if (isSuccess) closeTnCModal();
+        if (isSuccess) {
+            // 成功：保持按钮禁用，直接交给 onRegisterSuccess 进入卡页面
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            // 失败：重新显示 HANTAR 弹窗并允许重试
+            if (submitBtn) submitBtn.disabled = false;
+            var tncModal = document.getElementById('tncModal');
+            if (tncModal) tncModal.classList.add('show');
+        }
         alert(msg);
         if (isSuccess && window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
             window.MBSApp.onRegisterSuccess(cardNoVal);
