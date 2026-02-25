@@ -208,7 +208,7 @@
         }
     };
 
-    var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWu_EnJEJeszS8tWOeACSzg9mlWGHOivWKA70-_7T449Kakqx78CX4jmi_Vf-_Zkwexec/exec';
+    var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWu_EnJEJeszS8tWOeACSzg9mlWGHOivWKA70-_7T449Kakqx78CX4jmi_Vf-_Zkw/exec';
     var regSignaturePad = null;
     var regHtml5QrCode = null;
 
@@ -232,9 +232,9 @@
         if (!v) return { ok: false, msg: 'Sila imbas no kad.' };
         if (/[a-zA-Z]/.test(v)) return { ok: false, msg: 'No kad tidak sah: mengandungi abjad. Hanya nombor dan ruang dibenarkan.' };
         var normalized = v.replace(/\s/g, '');
-        var validPrefixes = ['10', '20', '30', '40', '50', '60', '70', '80', '90'];
+        var validPrefixes = ['10', '20', '24', '30', '40', '50', '60', '70', '80', '90'];
         var ok = validPrefixes.some(function(p) { return normalized.indexOf(p) === 0; });
-        if (!ok) return { ok: false, msg: 'No kad tidak sah. Mesti bermula dengan 10, 20, 30, 40, 50, 60, 70, 80 atau 90.' };
+        if (!ok) return { ok: false, msg: 'No kad tidak sah.' };
         return { ok: true };
     }
     function showRegCardNoError(msg) {
@@ -414,3 +414,4 @@
     window.toggleBtnHantar = toggleBtnHantar;
     window.hantarDanDownload = hantarDanDownload;
 })();
+
