@@ -270,6 +270,11 @@
         var cardResult = validateRegCardNo(cardNo);
         if (!cardResult.ok) { showRegCardNoError(cardResult.msg); alert(cardResult.msg); return; }
         showRegCardNoError('');
+        var tncBox = document.getElementById('tncText');
+        if (tncBox && !tncBox.getAttribute('data-loaded') && window.MBS_TNC_V1 && window.MBS_TNC_V1.modalHtml) {
+            tncBox.innerHTML = window.MBS_TNC_V1.modalHtml;
+            tncBox.setAttribute('data-loaded', '1');
+        }
         var form = document.getElementById('regForm');
         if (!form.checkValidity()) return form.reportValidity();
         document.getElementById('agreeTnC').checked = false;
@@ -321,17 +326,17 @@ async function hantarDanDownload() {
         city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
         state: document.getElementById('regState').value,
         anak: (document.getElementById('regAnak').value || '0'),
-        signature: regSignaturePad.toDataURL("image/jpeg", 0.7)
+        signature: regSignaturePad.toDataURL("image/jpeg", 0.7),
+        tncEn: (window.MBS_TNC_V1 && window.MBS_TNC_V1.textEn) ? window.MBS_TNC_V1.textEn : '',
+        tncMy: (window.MBS_TNC_V1 && window.MBS_TNC_V1.textMy) ? window.MBS_TNC_V1.textMy : '',
+        tncVersion: (window.MBS_TNC_V1 && window.MBS_TNC_V1.version) ? window.MBS_TNC_V1.version : ''
     };
 
-    function finishRegister(msg) {
-
+    function finishRegister(msg, isSuccess) {
         document.getElementById('regLoader').classList.remove('show');
         closeTnCModal();
-
         alert(msg);
-
-        if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
+        if (isSuccess && window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
             window.MBSApp.onRegisterSuccess(cardNoVal);
         }
     }
@@ -364,93 +369,29 @@ async function hantarDanDownload() {
             throw new Error(result.message || "Server error");
         }
 
-        // ===== 生成 PDF =====
-
-        var JsPDF = window.jspdf && window.jspdf.jsPDF;
-
-        if (JsPDF) {
-
-            var doc = new JsPDF();
-
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text('MBS BOOKS & STATIONERY', 105, 20, { align: 'center' });
-
-            doc.setFontSize(12);
-            doc.text('PAHANG PRIDE DISCOUNT CARD - REGISTRATION RECEIPT', 105, 28, { align: 'center' });
-
-            doc.line(20, 32, 190, 32);
-
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-
-            var y = 45;
-
-            var info = [
-                ['JENIS MEMBER', data.type],
-                ['NO KAD', data.cardNo],
-                ['NAMA PENUH', data.nama],
-                ['NO IC', data.ic],
-                ['HANDPHONE', data.phone],
-                ['ALAMAT', data.alamat],
-                ['POSTCODE', data.postcode],
-                ['CITY', data.city],
-                ['STATE', data.state],
-                ['BIL ANAK', data.anak]
-            ];
-
-            info.forEach(function(item) {
-
-                doc.setFont('helvetica', 'bold');
-                doc.text(item[0] + ':', 25, y);
-
-                doc.setFont('helvetica', 'normal');
-                doc.text(String(item[1]), 75, y);
-
-                y += 9;
-
-            });
-
-            y += 8;
-
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text('PENGAKUAN & SYARAT', 25, y);
-
-            y += 5;
-
-            doc.setFont('helvetica', 'normal');
-
-            var tncMsg =
-                'I hereby confirm that all my personal information stated above is true and complete.';
-
-            doc.text(doc.splitTextToSize(tncMsg, 160), 25, y);
-
-            y += 14;
-
-            doc.text('Saya setuju / I agree.', 25, y);
-
-            y += 8;
-
-            doc.setFont('helvetica', 'bold');
-            doc.text('TANDATANGAN', 25, y);
-
-            doc.addImage(data.signature, 'JPEG', 25, y + 2, 50, 25);
-
-            doc.setFontSize(8);
-            doc.text('Tarikh: ' + new Date().toLocaleDateString('ms-MY'), 25, y + 32);
-
-            doc.save('MBS_REG_' + data.cardNo + '.pdf');
+        // ===== PDF 由后端生成，这里只负责触发下载 =====
+        if (result && result.result === "success") {
+            var downloadUrl = result.downloadUrl || result.viewUrl;
+            if (downloadUrl) {
+                try {
+                    var a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'MBS_REG_' + data.cardNo + '.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } catch (e) {
+                    // 回退：无法使用 download 属性时，直接新开窗口
+                    window.open(downloadUrl, '_blank');
+                }
+            }
         }
 
-        finishRegister('PENDAFTARAN BERJAYA!');
+        finishRegister('PENDAFTARAN BERJAYA!', true);
 
     } catch (err) {
-
         console.error(err);
-
-        finishRegister('Ralat sambungan server. Sila cuba lagi.');
-
+        finishRegister('Ralat sambungan server. Sila cuba lagi.', false);
     }
 }
     
