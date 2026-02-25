@@ -321,12 +321,16 @@ async function hantarDanDownload() {
         city: (document.getElementById('regCity').value || '').toUpperCase().trim(),
         state: document.getElementById('regState').value,
         anak: (document.getElementById('regAnak').value || '0'),
-        signature: regSignaturePad.toDataURL("image/png",0.8)
+
+        // 压缩签名
+        signature: regSignaturePad.toDataURL("image/jpeg", 0.7)
     };
 
     function finishRegister(msg) {
+
         document.getElementById('regLoader').classList.remove('show');
         closeTnCModal();
+
         alert(msg);
 
         if (window.MBSApp && typeof window.MBSApp.onRegisterSuccess === 'function') {
@@ -336,7 +340,7 @@ async function hantarDanDownload() {
 
     try {
 
-        // SEND TO APPS SCRIPT
+        // ===== 发送到 Apps Script =====
         const res = await fetch(APPS_SCRIPT_URL, {
             method: "POST",
             headers: {
@@ -345,14 +349,22 @@ async function hantarDanDownload() {
             body: JSON.stringify(data)
         });
 
-        const result = await res.json();
+        let result = {};
+
+        try {
+            result = await res.json();
+        } catch (e) {
+            console.warn("Server did not return JSON");
+        }
+
         console.log("Server:", result);
 
-        if (result.result !== "success") {
+        if (result.result && result.result !== "success") {
             throw new Error(result.message || "Server error");
         }
 
-        // GENERATE PDF
+        // ===== 生成 PDF =====
+
         var JsPDF = window.jspdf && window.jspdf.jsPDF;
 
         if (JsPDF) {
@@ -387,6 +399,7 @@ async function hantarDanDownload() {
             ];
 
             info.forEach(function(item) {
+
                 doc.setFont('helvetica', 'bold');
                 doc.text(item[0] + ':', 25, y);
 
@@ -394,6 +407,7 @@ async function hantarDanDownload() {
                 doc.text(String(item[1]), 75, y);
 
                 y += 9;
+
             });
 
             y += 8;
@@ -407,7 +421,7 @@ async function hantarDanDownload() {
             doc.setFont('helvetica', 'normal');
 
             var tncMsg =
-            'I hereby confirm that all my personal information stated above is true and complete.';
+                'I hereby confirm that all my personal information stated above is true and complete.';
 
             doc.text(doc.splitTextToSize(tncMsg, 160), 25, y);
 
@@ -420,7 +434,7 @@ async function hantarDanDownload() {
             doc.setFont('helvetica', 'bold');
             doc.text('TANDATANGAN', 25, y);
 
-            doc.addImage(data.signature, 'PNG', 25, y + 2, 50, 25);
+            doc.addImage(data.signature, 'JPEG', 25, y + 2, 50, 25);
 
             doc.setFontSize(8);
             doc.text('Tarikh: ' + new Date().toLocaleDateString('ms-MY'), 25, y + 32);
@@ -433,6 +447,7 @@ async function hantarDanDownload() {
     } catch (err) {
 
         console.error(err);
+
         finishRegister('Ralat sambungan server. Sila cuba lagi.');
 
     }
@@ -493,5 +508,6 @@ async function hantarDanDownload() {
     window.toggleBtnHantar = toggleBtnHantar;
     window.hantarDanDownload = hantarDanDownload;
 })();
+
 
 
