@@ -100,7 +100,7 @@
     function cardImage(id) {
         var valid = /^\d[\d\s]*\d$/.test(id) && !/[^\d\s]/.test(id) && id.length >= 6;
         if (!valid) return { img: assetPath('png3.webp'), bg: '#334155' };
-        if (id.startsWith('3') || id.startsWith('6')) return { img: assetPath('png1.webp'), bg: '#1e3a8a' };
+        if (id.startsWith('2') || id.startsWith('3') || id.startsWith('6')) return { img: assetPath('png1.webp'), bg: '#1e3a8a' };
         if (id.startsWith('9')) return { img: assetPath('png2.webp'), bg: '#991b1b' };
         return { img: assetPath('png3.webp'), bg: '#334155' };
     }
@@ -146,8 +146,16 @@
 
     function activateCard() {
         var input = document.getElementById('memberInput');
-        var id = (input && input.value ? input.value : '').trim().toUpperCase();
-        if (!id) { alert('Sila masukkan No. Ahli.'); return; }
+        var raw = (input && input.value ? input.value : '').trim();
+        if (!raw) { alert('Sila masukkan No. Kad.'); return; }
+        // Guna logik sama seperti halaman DAFTAR
+        var result = validateRegCardNo(raw);
+        if (!result.ok) {
+            alert(result.msg);
+            return;
+        }
+        // Simpan格式：去掉首尾空格，内部空格保留（与 DAFTAR 一致）
+        var id = raw;
         localStorage.setItem('mbs_digital_id', id);
         document.getElementById('loadingScreen').classList.remove('hide');
         document.getElementById('setupArea').classList.remove('show');
